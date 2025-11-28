@@ -555,6 +555,7 @@
             peer = new Peer(peerId);
 
             peer.on('open', function(id) {
+                console.log('Room created with ID:', id);
                 isHost = true;
                 myPlayer = 'X';
                 document.getElementById('room-code').textContent = id.replace('ttt-', '');
@@ -563,12 +564,14 @@
             });
 
             peer.on('connection', function(conn) {
+                console.log('Incoming connection from:', conn.peer);
                 connection = conn;
                 setupConnection();
                 startGame();
             });
 
             peer.on('error', function(err) {
+                console.error('Peer error:', err);
                 showError('Connection error: ' + err.message);
             });
         }
@@ -585,26 +588,43 @@
                 return;
             }
 
+            // Show connecting status
+            const statusEl = document.getElementById('connection-status');
+            statusEl.textContent = 'Connecting...';
+            statusEl.className = 'connection-status waiting';
+            statusEl.classList.remove('hidden');
+
             const peerId = 'ttt-' + Math.random().toString(36).substr(2, 9);
             peer = new Peer(peerId);
 
             peer.on('open', function(id) {
+                console.log('My peer ID:', id);
+                console.log('Connecting to:', 'ttt-' + roomCode);
                 myPlayer = 'O';
                 connection = peer.connect('ttt-' + roomCode);
+
+                connection.on('error', function(err) {
+                    console.error('Connection error:', err);
+                    showError('Failed to connect: ' + err);
+                });
+
                 setupConnection();
             });
 
             peer.on('error', function(err) {
-                showError('Failed to join room: ' + err.message);
+                console.error('Peer error:', err);
+                showError('Failed to join room. Check the room code and try again.');
             });
         }
 
         function setupConnection() {
             connection.on('open', function() {
+                console.log('Connection established!');
                 startGame();
             });
 
             connection.on('data', function(data) {
+                console.log('Received data:', data);
                 if (data.type === 'move') {
                     // Update game state from peer
                     board = data.gameState.board;
@@ -623,7 +643,13 @@
             });
 
             connection.on('close', function() {
+                console.log('Connection closed');
                 showError('Opponent disconnected');
+            });
+
+            connection.on('error', function(err) {
+                console.error('Connection error:', err);
+                showError('Connection error: ' + err);
             });
         }
 
