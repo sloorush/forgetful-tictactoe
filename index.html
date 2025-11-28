@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Disappearing Tic-Tac-Toe</title>
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -198,6 +199,131 @@
         .hidden {
             display: none;
         }
+
+        .multiplayer-setup {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .multiplayer-setup h2 {
+            font-size: 1.5rem;
+            color: #1f2937;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .primary-button, .secondary-button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .primary-button {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .primary-button:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            transform: translateY(-1px);
+        }
+
+        .secondary-button {
+            background: white;
+            color: #3b82f6;
+            border: 2px solid #3b82f6;
+        }
+
+        .secondary-button:hover {
+            background: #eff6ff;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .connection-status {
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .connection-status.connected {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .connection-status.waiting {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .connection-status.error {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .room-code-display {
+            background: #f3f4f6;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .room-code-display .label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .room-code-display .code {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
@@ -207,6 +333,40 @@
             <p>Every 4th turn, your first move disappears!</p>
         </div>
 
+        <div id="multiplayer-setup" class="multiplayer-setup">
+            <h2>Multiplayer Setup</h2>
+
+            <div id="connection-status" class="connection-status hidden"></div>
+
+            <div id="initial-choice">
+                <div class="button-group">
+                    <button class="primary-button" onclick="createRoom()">Create Room</button>
+                    <button class="secondary-button" onclick="showJoinRoom()">Join Room</button>
+                </div>
+                <button class="secondary-button" style="width: 100%;" onclick="playLocal()">Play Locally</button>
+            </div>
+
+            <div id="room-created" class="hidden">
+                <div class="room-code-display">
+                    <div class="label">Share this code with your friend:</div>
+                    <div class="code" id="room-code"></div>
+                </div>
+                <div class="connection-status waiting">Waiting for opponent to join...</div>
+            </div>
+
+            <div id="join-room" class="hidden">
+                <div class="input-group">
+                    <label for="room-code-input">Enter Room Code:</label>
+                    <input type="text" id="room-code-input" placeholder="Enter code here">
+                </div>
+                <div class="button-group">
+                    <button class="primary-button" onclick="joinRoom()">Join</button>
+                    <button class="secondary-button" onclick="backToMenu()">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-container" class="hidden">
         <div class="game-status">
             <div id="winner-section" class="winner-section hidden">
                 <div class="trophy">🏆</div>
@@ -240,6 +400,7 @@
             <span class="reset-icon">↻</span>
             New Game
         </button>
+        </div>
 
         <div class="rules">
             <h3>How to Play</h3>
@@ -260,6 +421,13 @@
         let turnCount = { X: 0, O: 0 };
         let gameOver = false;
 
+        // Multiplayer variables
+        let peer = null;
+        let connection = null;
+        let isMultiplayer = false;
+        let myPlayer = null; // 'X' or 'O'
+        let isHost = false;
+
         const winningCombinations = [
             [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
             [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
@@ -279,27 +447,30 @@
         function makeMove(index) {
             if (board[index] || gameOver) return;
 
+            // In multiplayer mode, only allow moves if it's your turn
+            if (isMultiplayer && currentPlayer !== myPlayer) return;
+
             const newBoard = [...board];
             newBoard[index] = currentPlayer;
-            
+
             const newHistory = { ...gameHistory };
             const newTurnCount = { ...turnCount };
-            
+
             // Add the move to history
             newHistory[currentPlayer].push(index);
             newTurnCount[currentPlayer]++;
-            
+
             // Check if we need to remove the oldest move (on 4th turn)
             if (newTurnCount[currentPlayer] === 4) {
                 const oldestMove = newHistory[currentPlayer].shift();
                 newBoard[oldestMove] = null;
                 newTurnCount[currentPlayer] = 3; // Reset to 3 since we removed one
             }
-            
+
             board = newBoard;
             gameHistory = newHistory;
             turnCount = newTurnCount;
-            
+
             // Check for winner
             const gameWinner = checkWinner(board);
             if (gameWinner) {
@@ -309,8 +480,23 @@
             } else {
                 currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
             }
-            
+
             updateDisplay();
+
+            // Send move to peer in multiplayer
+            if (isMultiplayer && connection) {
+                connection.send({
+                    type: 'move',
+                    gameState: {
+                        board,
+                        currentPlayer,
+                        gameHistory,
+                        turnCount,
+                        winner,
+                        gameOver
+                    }
+                });
+            }
         }
 
         function resetGame() {
@@ -333,16 +519,22 @@
                 if (board[index]) {
                     cell.classList.add(board[index].toLowerCase());
                 }
-                cell.disabled = gameOver || board[index];
+                cell.disabled = gameOver || board[index] || (isMultiplayer && currentPlayer !== myPlayer);
             });
 
             // Update turn counter
             document.getElementById('x-count').textContent = turnCount.X;
             document.getElementById('o-count').textContent = turnCount.O;
-            
+
             // Update current player
             if (!gameOver) {
-                document.getElementById('current-player').textContent = `Player ${currentPlayer}'s Turn`;
+                if (isMultiplayer) {
+                    const isMyTurn = currentPlayer === myPlayer;
+                    document.getElementById('current-player').textContent =
+                        isMyTurn ? `Your Turn (${myPlayer})` : `Opponent's Turn (${currentPlayer})`;
+                } else {
+                    document.getElementById('current-player').textContent = `Player ${currentPlayer}'s Turn`;
+                }
             }
         }
 
@@ -355,6 +547,112 @@
         function hideWinner() {
             document.getElementById('winner-section').classList.add('hidden');
             document.getElementById('current-turn').classList.remove('hidden');
+        }
+
+        // Multiplayer functions
+        function createRoom() {
+            const peerId = 'ttt-' + Math.random().toString(36).substr(2, 9);
+            peer = new Peer(peerId);
+
+            peer.on('open', function(id) {
+                isHost = true;
+                myPlayer = 'X';
+                document.getElementById('room-code').textContent = id.replace('ttt-', '');
+                document.getElementById('initial-choice').classList.add('hidden');
+                document.getElementById('room-created').classList.remove('hidden');
+            });
+
+            peer.on('connection', function(conn) {
+                connection = conn;
+                setupConnection();
+                startGame();
+            });
+
+            peer.on('error', function(err) {
+                showError('Connection error: ' + err.message);
+            });
+        }
+
+        function showJoinRoom() {
+            document.getElementById('initial-choice').classList.add('hidden');
+            document.getElementById('join-room').classList.remove('hidden');
+        }
+
+        function joinRoom() {
+            const roomCode = document.getElementById('room-code-input').value.trim();
+            if (!roomCode) {
+                alert('Please enter a room code');
+                return;
+            }
+
+            const peerId = 'ttt-' + Math.random().toString(36).substr(2, 9);
+            peer = new Peer(peerId);
+
+            peer.on('open', function(id) {
+                myPlayer = 'O';
+                connection = peer.connect('ttt-' + roomCode);
+                setupConnection();
+            });
+
+            peer.on('error', function(err) {
+                showError('Failed to join room: ' + err.message);
+            });
+        }
+
+        function setupConnection() {
+            connection.on('open', function() {
+                startGame();
+            });
+
+            connection.on('data', function(data) {
+                if (data.type === 'move') {
+                    // Update game state from peer
+                    board = data.gameState.board;
+                    currentPlayer = data.gameState.currentPlayer;
+                    gameHistory = data.gameState.gameHistory;
+                    turnCount = data.gameState.turnCount;
+                    winner = data.gameState.winner;
+                    gameOver = data.gameState.gameOver;
+
+                    if (gameOver && winner) {
+                        showWinner();
+                    }
+
+                    updateDisplay();
+                }
+            });
+
+            connection.on('close', function() {
+                showError('Opponent disconnected');
+            });
+        }
+
+        function startGame() {
+            isMultiplayer = true;
+            document.getElementById('multiplayer-setup').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            updateDisplay();
+        }
+
+        function playLocal() {
+            isMultiplayer = false;
+            myPlayer = null;
+            document.getElementById('multiplayer-setup').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            updateDisplay();
+        }
+
+        function backToMenu() {
+            document.getElementById('join-room').classList.add('hidden');
+            document.getElementById('initial-choice').classList.remove('hidden');
+            document.getElementById('room-code-input').value = '';
+        }
+
+        function showError(message) {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.textContent = message;
+            statusEl.className = 'connection-status error';
+            statusEl.classList.remove('hidden');
         }
 
         // Initialize the game
