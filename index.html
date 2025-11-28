@@ -576,9 +576,27 @@
 
             peer.on('connection', function(conn) {
                 console.log('Incoming connection from:', conn.peer);
+
+                // Only accept the first connection
+                if (connection && connection.open) {
+                    console.log('Already connected, rejecting new connection');
+                    conn.close();
+                    return;
+                }
+
                 connection = conn;
+
+                // For incoming connections, we need to set up listeners immediately
+                // The connection is already open from the peer's perspective
                 setupConnection();
-                startGame();
+
+                // Wait a bit for the connection to stabilize before starting
+                setTimeout(function() {
+                    if (connection.open) {
+                        console.log('Incoming connection is open, starting game');
+                        startGame();
+                    }
+                }, 100);
             });
 
             peer.on('error', function(err) {
