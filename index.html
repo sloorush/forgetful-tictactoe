@@ -552,7 +552,18 @@
         // Multiplayer functions
         function createRoom() {
             const peerId = 'ttt-' + Math.random().toString(36).substr(2, 9);
-            peer = new Peer(peerId);
+            peer = new Peer(peerId, {
+                host: '0.peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                }
+            });
 
             peer.on('open', function(id) {
                 console.log('Room created with ID:', id);
@@ -595,20 +606,42 @@
             statusEl.classList.remove('hidden');
 
             const peerId = 'ttt-' + Math.random().toString(36).substr(2, 9);
-            peer = new Peer(peerId);
+            peer = new Peer(peerId, {
+                host: '0.peerjs.com',
+                port: 443,
+                path: '/',
+                secure: true,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                }
+            });
 
             peer.on('open', function(id) {
                 console.log('My peer ID:', id);
                 console.log('Connecting to:', 'ttt-' + roomCode);
                 myPlayer = 'O';
-                connection = peer.connect('ttt-' + roomCode);
 
-                connection.on('error', function(err) {
-                    console.error('Connection error:', err);
-                    showError('Failed to connect: ' + err);
-                });
+                // Small delay to ensure peer is ready
+                setTimeout(function() {
+                    connection = peer.connect('ttt-' + roomCode, {
+                        reliable: true
+                    });
 
-                setupConnection();
+                    if (!connection) {
+                        showError('Failed to create connection');
+                        return;
+                    }
+
+                    connection.on('error', function(err) {
+                        console.error('Connection error:', err);
+                        showError('Failed to connect: ' + err);
+                    });
+
+                    setupConnection();
+                }, 500);
             });
 
             peer.on('error', function(err) {
