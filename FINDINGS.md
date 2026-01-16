@@ -24,9 +24,9 @@ PeerJS was chosen because:
 
 ### 1. Connection Reliability
 
-**Problem:** Initial implementation had frequent connection failures, especially across different networks.
+**Problem:** Initial implementation had frequent connection failures, especially across different networks and corporate firewalls.
 
-**Solution:** Expanded ICE server configuration with multiple STUN servers:
+**Solution:** Expanded ICE server configuration with multiple STUN servers AND free TURN servers for symmetric NAT traversal:
 ```javascript
 const iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -34,7 +34,11 @@ const iceServers = [
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
-    { urls: 'stun:stun.cloudflare.com:3478' }
+    { urls: 'stun:stun.cloudflare.com:3478' },
+    // TURN servers for symmetric NAT
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
 ];
 ```
 
@@ -71,16 +75,26 @@ const iceServers = [
 ## Architecture
 
 ```
-┌─────────────┐     PeerJS Cloud      ┌─────────────┐
-│   Host (X)  │◄────(signaling)──────►│  Guest (O)  │
-│             │                        │             │
-│  Creates    │     WebRTC P2P        │   Joins     │
-│  Room ID    │◄═══════════════════►  │   Room ID   │
-└─────────────┘    (game data)        └─────────────┘
+                        PeerJS Cloud
+                       (signaling only)
+                            │
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+        ▼                   ▼                   ▼
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Host (X)  │◄═══►│  Guest (O)  │     │  Spectator  │
+│             │     │             │     │  (read-only)│
+│  Creates    │     │   Joins     │     │   Watches   │
+│  Room ID    │     │   Room ID   │     │   Room ID   │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                                       ▲
+       │         WebRTC P2P (game data)        │
+       └───────────────────────────────────────┘
 ```
 
-1. **Signaling Phase:** PeerJS cloud server helps establish connection
+1. **Signaling Phase:** PeerJS cloud server helps establish connections
 2. **Game Phase:** Direct P2P communication, no server involved
+3. **Spectator Phase:** Host broadcasts game state to all spectators
 
 ## Game State Sync
 
@@ -109,18 +123,73 @@ All game state is transmitted on each move:
 | `pong` | Bidirectional | Heartbeat response |
 | `rematch-request` | Bidirectional | Request new game after win |
 | `rematch-start` | Bidirectional | Confirm rematch |
+| `identify-request` | Host → Client | Request client to identify role |
+| `identify` | Client → Host | Identify as `player` or `spectator` |
+| `room-full` | Host → Client | Reject player when room is full |
+| `game-state` | Host → Spectators | Broadcast current game state |
+
+## Additional Features
+
+### Reconnection System
+
+Game state is persisted to `sessionStorage` after each move:
+```javascript
+{
+    board, currentPlayer, gameHistory, turnCount,
+    winner, gameOver, myPlayer, isHost, roomCode, timestamp
+}
+```
+
+On page load, if saved state exists (within 60 seconds), user is offered to reconnect:
+- Host recreates room with same ID
+- Client reconnects to existing room
+- Game state is restored immediately
+
+### Spectator Mode
+
+Spectators connect with `role: 'spectator'` identification:
+1. Host maintains separate `spectatorConnections[]` array
+2. Game state broadcast to all spectators on each move
+3. Spectators receive read-only view (can't make moves)
+4. URL format: `?spectate=ROOM_CODE`
+
+### Sound System
+
+Web Audio API generates tones programmatically (no audio files):
+```javascript
+function playTone(frequency, duration, type, volume) {
+    const oscillator = audioContext.createOscillator();
+    oscillator.frequency.value = frequency;
+    oscillator.type = type; // 'sine', 'sawtooth', etc.
+    // ... gain envelope for smooth sound
+}
+```
+
+Sound events: place, disappear, win, lose, connect, disconnect
+
+### Theme System
+
+CSS custom properties enable runtime theme switching:
+```css
+:root { --x-color: #2563eb; --o-color: #dc2626; ... }
+body.theme-dark { --x-color: #60a5fa; --o-color: #f87171; ... }
+body.theme-neon { --x-color: #00ffff; --o-color: #ff00ff; ... }
+```
+
+Themes: Classic, Dark, Neon, Retro (saved to localStorage)
 
 ## Limitations
 
-1. **NAT Traversal:** Some strict corporate firewalls may block WebRTC
-2. **No TURN Server:** Falls back only to STUN; symmetric NAT may fail
-3. **No Persistence:** Game state lost if both players disconnect
-4. **Two Players Only:** Architecture doesn't support spectators
+1. **NAT Traversal:** Very strict corporate firewalls may still block WebRTC
+2. **TURN Server Dependency:** Free OpenRelay TURN may have availability limits
+3. **Reconnection Window:** Only 60 seconds to reconnect before state expires
+4. **Spectator Limit:** No hard limit, but many spectators may impact host performance
 
-## Future Improvements
+## Completed Improvements
 
-1. Add TURN server for better NAT traversal
-2. Implement reconnection with game state recovery
-3. Add spectator mode
-4. Sound effects and animations
-5. Mobile-responsive touch improvements
+- [x] ~~Add TURN server for better NAT traversal~~
+- [x] ~~Implement reconnection with game state recovery~~
+- [x] ~~Add spectator mode~~
+- [x] ~~Sound effects and animations~~
+- [x] ~~Mobile-responsive touch improvements~~
+- [x] Theme system with 4 visual themes

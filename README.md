@@ -22,11 +22,33 @@ A twist on the classic game where your oldest move disappears on your 4th turn. 
 - Click the shared link to auto-join, OR
 - Click **"Join Room"** and enter the room code
 
+### Watch a Game
+- Click **"Spectate"** and enter a room code, OR
+- Use the spectate URL: `?spectate=CODE`
+
 ### Features
 - Real-time P2P gameplay (no lag from servers)
 - Connection status indicator
 - Rematch button after game ends
+- Spectator mode for watching games
+- Reconnection support if you refresh
 - Works on any modern browser
+
+## Customization
+
+### Themes
+Choose from 4 visual themes:
+- **Classic** - Blue X, Red O, light background
+- **Dark Mode** - Easy on the eyes
+- **Neon** - Glowing cyberpunk style
+- **Retro** - Game Boy inspired
+
+### Sound Effects
+Toggle sound on/off with the speaker button. Includes sounds for:
+- Placing pieces
+- Pieces disappearing
+- Winning/losing
+- Player connect/disconnect
 
 ## Technical Details
 
@@ -34,7 +56,9 @@ Built with vanilla HTML, CSS, and JavaScript. Multiplayer uses [PeerJS](https://
 
 - **No backend server required** - runs entirely on static hosting
 - **P2P architecture** - game data flows directly between players
-- **Reliable connections** - retry logic, heartbeat monitoring, multiple STUN servers
+- **Reliable connections** - retry logic, heartbeat monitoring, STUN + TURN servers
+- **Reconnection support** - game state saved to sessionStorage
+- **Mobile optimized** - responsive design with touch-friendly controls
 
 See [FINDINGS.md](./FINDINGS.md) for technical implementation details.
 

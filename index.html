@@ -6,6 +6,103 @@
     <title>Disappearing Tic-Tac-Toe</title>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     <style>
+        /* CSS Custom Properties for Themes */
+        :root {
+            --bg-primary: #f0f8ff;
+            --bg-secondary: #f3e8ff;
+            --bg-card: white;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --x-color: #2563eb;
+            --o-color: #dc2626;
+            --cell-bg: #f3f4f6;
+            --cell-border: #4b5563;
+            --cell-hover: #e5e7eb;
+            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --success-bg: #d1fae5;
+            --success-color: #059669;
+            --warning-bg: #fef3c7;
+            --warning-color: #d97706;
+            --error-bg: #fee2e2;
+            --error-color: #dc2626;
+        }
+
+        body.theme-dark {
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --bg-card: #374151;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --x-color: #60a5fa;
+            --o-color: #f87171;
+            --cell-bg: #4b5563;
+            --cell-border: #6b7280;
+            --cell-hover: #6b7280;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --success-bg: #064e3b;
+            --success-color: #34d399;
+            --warning-bg: #78350f;
+            --warning-color: #fbbf24;
+            --error-bg: #7f1d1d;
+            --error-color: #fca5a5;
+        }
+
+        body.theme-neon {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #0f0f0f;
+            --bg-card: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --x-color: #00ffff;
+            --o-color: #ff00ff;
+            --cell-bg: #1a1a1a;
+            --cell-border: #333333;
+            --cell-hover: #2a2a2a;
+            --shadow-color: rgba(0, 255, 255, 0.2);
+            --accent-gradient: linear-gradient(135deg, #00ffff 0%, #ff00ff 100%);
+            --success-bg: #003333;
+            --success-color: #00ffaa;
+            --warning-bg: #333300;
+            --warning-color: #ffff00;
+            --error-bg: #330000;
+            --error-color: #ff6666;
+        }
+
+        body.theme-retro {
+            --bg-primary: #c4cfa1;
+            --bg-secondary: #b5c08f;
+            --bg-card: #9bac7c;
+            --text-primary: #1a1a1a;
+            --text-secondary: #333333;
+            --x-color: #1a1a1a;
+            --o-color: #1a1a1a;
+            --cell-bg: #8b9b6e;
+            --cell-border: #1a1a1a;
+            --cell-hover: #7a8a5d;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --accent-gradient: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+            --success-bg: #6b8b4a;
+            --success-color: #1a1a1a;
+            --warning-bg: #8b8b4a;
+            --warning-color: #1a1a1a;
+            --error-bg: #8b4a4a;
+            --error-color: #1a1a1a;
+        }
+
+        body.theme-retro .cell {
+            font-family: 'Courier New', monospace;
+            border-width: 3px;
+        }
+
+        body.theme-neon .cell.x {
+            text-shadow: 0 0 10px var(--x-color), 0 0 20px var(--x-color);
+        }
+
+        body.theme-neon .cell.o {
+            text-shadow: 0 0 10px var(--o-color), 0 0 20px var(--o-color);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,9 +111,10 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f0f8ff 0%, #f3e8ff 100%);
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
             min-height: 100vh;
             padding: 20px;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -27,23 +125,54 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .theme-select, .mute-button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 2px solid var(--cell-border);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .theme-select:hover, .mute-button:hover {
+            background: var(--cell-hover);
+        }
+
+        .mute-button {
+            min-width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .header h1 {
             font-size: 2.5rem;
-            color: #1f2937;
+            color: var(--text-primary);
             margin-bottom: 10px;
         }
 
         .header p {
-            color: #6b7280;
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
         .game-status {
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px var(--shadow-color);
             padding: 24px;
             margin-bottom: 24px;
             text-align: center;
@@ -65,33 +194,37 @@
         .winner-text {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #059669;
+            color: var(--success-color);
         }
 
         .current-player {
             font-size: 1.25rem;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--text-primary);
             margin-bottom: 8px;
+        }
+
+        .current-player.pulse {
+            animation: turnPulse 1.5s ease-in-out infinite;
         }
 
         .move-count {
             font-size: 0.875rem;
-            color: #6b7280;
+            color: var(--text-secondary);
         }
 
         .move-count .x-count {
-            color: #2563eb;
+            color: var(--x-color);
         }
 
         .move-count .o-count {
-            color: #dc2626;
+            color: var(--o-color);
         }
 
         .game-board {
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px var(--shadow-color);
             padding: 24px;
             margin-bottom: 24px;
         }
@@ -107,8 +240,8 @@
         .cell {
             width: 80px;
             height: 80px;
-            border: 2px solid #4b5563;
-            background: #f3f4f6;
+            border: 2px solid var(--cell-border);
+            background: var(--cell-bg);
             border-radius: 8px;
             font-size: 2rem;
             font-weight: bold;
@@ -117,11 +250,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         .cell:hover:not(:disabled) {
-            background: #e5e7eb;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: var(--cell-hover);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            transform: translateY(-2px);
+        }
+
+        .cell:active:not(:disabled) {
+            transform: translateY(0);
         }
 
         .cell:disabled {
@@ -130,11 +270,46 @@
         }
 
         .cell.x {
-            color: #2563eb;
+            color: var(--x-color);
         }
 
         .cell.o {
-            color: #dc2626;
+            color: var(--o-color);
+        }
+
+        /* Animation classes */
+        .cell.place-animation {
+            animation: placeIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .cell.disappear-animation {
+            animation: disappearOut 0.4s ease-out forwards;
+        }
+
+        .cell.winning-cell {
+            animation: winPulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes placeIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes disappearOut {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes winPulse {
+            0% { background: var(--success-bg); transform: scale(1); }
+            100% { background: var(--success-bg); transform: scale(1.05); box-shadow: 0 0 15px var(--success-color); }
+        }
+
+        @keyframes turnPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
 
         .button-row {
@@ -144,7 +319,7 @@
 
         .reset-button {
             flex: 1;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            background: var(--accent-gradient);
             color: white;
             font-weight: 600;
             padding: 12px 24px;
@@ -152,7 +327,7 @@
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px var(--shadow-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -160,9 +335,9 @@
         }
 
         .reset-button:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
             transform: translateY(-1px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 6px 12px var(--shadow-color);
+            filter: brightness(1.1);
         }
 
         .reset-icon {
@@ -186,9 +361,9 @@
         }
 
         .rules {
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px var(--shadow-color);
             padding: 24px;
             margin-top: 24px;
         }
@@ -196,14 +371,14 @@
         .rules h3 {
             font-size: 1.125rem;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--text-primary);
             margin-bottom: 12px;
         }
 
         .rules ul {
             list-style: none;
             font-size: 0.875rem;
-            color: #6b7280;
+            color: var(--text-secondary);
             line-height: 1.6;
         }
 
@@ -218,7 +393,7 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         .stamp {
@@ -241,16 +416,16 @@
         }
 
         .multiplayer-setup {
-            background: white;
+            background: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px var(--shadow-color);
             padding: 24px;
             margin-bottom: 24px;
         }
 
         .multiplayer-setup h2 {
             font-size: 1.5rem;
-            color: #1f2937;
+            color: var(--text-primary);
             margin-bottom: 16px;
             text-align: center;
         }
@@ -273,13 +448,13 @@
         }
 
         .primary-button {
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            background: var(--accent-gradient);
             color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px var(--shadow-color);
         }
 
         .primary-button:hover:not(:disabled) {
-            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            filter: brightness(1.1);
             transform: translateY(-1px);
         }
 
@@ -289,13 +464,13 @@
         }
 
         .secondary-button {
-            background: white;
-            color: #3b82f6;
-            border: 2px solid #3b82f6;
+            background: var(--bg-card);
+            color: var(--x-color);
+            border: 2px solid var(--x-color);
         }
 
         .secondary-button:hover {
-            background: #eff6ff;
+            background: var(--cell-hover);
         }
 
         .input-group {
@@ -306,22 +481,24 @@
             display: block;
             font-size: 0.875rem;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--text-primary);
             margin-bottom: 8px;
         }
 
         .input-group input {
             width: 100%;
             padding: 12px;
-            border: 2px solid #d1d5db;
+            border: 2px solid var(--cell-border);
             border-radius: 8px;
             font-size: 1rem;
             transition: border-color 0.2s;
+            background: var(--bg-card);
+            color: var(--text-primary);
         }
 
         .input-group input:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: var(--x-color);
         }
 
         .connection-status {
@@ -334,22 +511,27 @@
         }
 
         .connection-status.connected {
-            background: #d1fae5;
-            color: #059669;
+            background: var(--success-bg);
+            color: var(--success-color);
         }
 
         .connection-status.waiting {
-            background: #fef3c7;
-            color: #d97706;
+            background: var(--warning-bg);
+            color: var(--warning-color);
         }
 
         .connection-status.error {
-            background: #fee2e2;
-            color: #dc2626;
+            background: var(--error-bg);
+            color: var(--error-color);
+        }
+
+        .connection-status.reconnecting {
+            background: var(--warning-bg);
+            color: var(--warning-color);
         }
 
         .room-code-display {
-            background: #f3f4f6;
+            background: var(--cell-bg);
             padding: 16px;
             border-radius: 8px;
             text-align: center;
@@ -358,18 +540,18 @@
 
         .room-code-display .label {
             font-size: 0.875rem;
-            color: #6b7280;
+            color: var(--text-secondary);
             margin-bottom: 8px;
         }
 
         .room-code-display .url-display {
-            background: white;
-            border: 1px solid #d1d5db;
+            background: var(--bg-card);
+            border: 1px solid var(--cell-border);
             border-radius: 6px;
             padding: 10px 12px;
             font-size: 0.8rem;
             font-family: monospace;
-            color: #374151;
+            color: var(--text-primary);
             word-break: break-all;
             margin-bottom: 12px;
             text-align: left;
@@ -385,13 +567,13 @@
         .room-code-display .code {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #1f2937;
+            color: var(--text-primary);
             font-family: monospace;
             letter-spacing: 2px;
         }
 
         .copy-button {
-            background: #3b82f6;
+            background: var(--x-color);
             color: white;
             border: none;
             padding: 6px 12px;
@@ -403,11 +585,11 @@
         }
 
         .copy-button:hover {
-            background: #2563eb;
+            filter: brightness(1.1);
         }
 
         .copy-button.copied {
-            background: #059669;
+            background: var(--success-color);
         }
 
         .connection-indicator {
@@ -423,13 +605,18 @@
         }
 
         .connection-indicator.online {
-            background: #d1fae5;
-            color: #059669;
+            background: var(--success-bg);
+            color: var(--success-color);
         }
 
         .connection-indicator.offline {
-            background: #fee2e2;
-            color: #dc2626;
+            background: var(--error-bg);
+            color: var(--error-color);
+        }
+
+        .connection-indicator.reconnecting {
+            background: var(--warning-bg);
+            color: var(--warning-color);
         }
 
         .connection-indicator .dot {
@@ -440,12 +627,17 @@
         }
 
         .connection-indicator.online .dot {
-            background: #059669;
+            background: var(--success-color);
         }
 
         .connection-indicator.offline .dot {
-            background: #dc2626;
+            background: var(--error-color);
             animation: none;
+        }
+
+        .connection-indicator.reconnecting .dot {
+            background: var(--warning-color);
+            animation: pulse 0.5s infinite;
         }
 
         @keyframes pulse {
@@ -472,7 +664,7 @@
 
         .rematch-button:hover:not(:disabled) {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px var(--shadow-color);
         }
 
         .rematch-button:disabled {
@@ -482,8 +674,148 @@
 
         .rematch-status {
             font-size: 0.875rem;
-            color: #6b7280;
+            color: var(--text-secondary);
             margin-top: 8px;
+        }
+
+        /* Spectator mode styles */
+        .spectator-banner {
+            background: var(--warning-bg);
+            color: var(--warning-color);
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .spectator-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Reconnection UI */
+        .reconnect-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .reconnect-dialog {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 320px;
+        }
+
+        .reconnect-dialog h3 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .reconnect-dialog p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        .reconnect-dialog .button-group {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .reconnect-dialog button {
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 480px) {
+            .stamp {
+                display: none;
+            }
+
+            body {
+                padding: 12px;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .header p {
+                font-size: 0.85rem;
+            }
+
+            .header-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .cell {
+                width: 90px;
+                height: 90px;
+                font-size: 2.25rem;
+            }
+
+            .board {
+                gap: 6px;
+            }
+
+            .game-status, .game-board, .rules, .multiplayer-setup {
+                padding: 16px;
+            }
+
+            .button-row {
+                flex-direction: column;
+            }
+
+            .leave-button {
+                width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .primary-button, .secondary-button {
+                width: 100%;
+            }
+
+            .current-player {
+                font-size: 1.1rem;
+            }
+
+            .move-count {
+                font-size: 0.8rem;
+            }
+
+            .room-code-display .url-display {
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .cell {
+                width: 80px;
+                height: 80px;
+                font-size: 2rem;
+            }
+        }
+
+        /* Prevent double-tap zoom */
+        button, .cell {
+            touch-action: manipulation;
         }
     </style>
 </head>
@@ -491,6 +823,17 @@
     <div class="stamp">ideated by prx<br>made by rush & claude</div>
     <div class="container">
         <div class="header">
+            <div class="header-controls">
+                <select class="theme-select" id="theme-select" onchange="setTheme(this.value)">
+                    <option value="classic">Classic</option>
+                    <option value="dark">Dark Mode</option>
+                    <option value="neon">Neon</option>
+                    <option value="retro">Retro</option>
+                </select>
+                <button class="mute-button" id="mute-button" onclick="toggleMute()" title="Toggle sound">
+                    <span id="sound-icon">🔊</span>
+                </button>
+            </div>
             <h1>Disappearing Tic-Tac-Toe</h1>
             <p>Every 4th turn, your first move disappears!</p>
         </div>
@@ -505,7 +848,10 @@
                     <button class="primary-button" onclick="createRoom()">Create Room</button>
                     <button class="secondary-button" onclick="showJoinRoom()">Join Room</button>
                 </div>
-                <button class="secondary-button" style="width: 100%;" onclick="playLocal()">Play Locally</button>
+                <div class="button-group" style="margin-top: 12px;">
+                    <button class="secondary-button" onclick="showSpectateRoom()">Spectate</button>
+                    <button class="secondary-button" onclick="playLocal()">Play Local</button>
+                </div>
             </div>
 
             <div id="room-created" class="hidden">
@@ -530,7 +876,23 @@
             </div>
         </div>
 
+        <div id="reconnect-overlay" class="reconnect-overlay hidden">
+            <div class="reconnect-dialog">
+                <h3 id="reconnect-title">Game Found</h3>
+                <p id="reconnect-message">Found a saved game. Reconnect?</p>
+                <div class="button-group">
+                    <button class="primary-button" id="reconnect-btn">Reconnect</button>
+                    <button class="secondary-button" id="abandon-btn">Start Fresh</button>
+                </div>
+            </div>
+        </div>
+
         <div id="game-container" class="hidden">
+            <div id="spectator-banner" class="spectator-banner hidden">
+                Watching Game
+                <div id="spectator-count" class="spectator-count"></div>
+            </div>
+
             <div id="connection-indicator" class="connection-indicator online hidden">
                 <span class="dot"></span>
                 <span id="connection-text">Connected</span>
@@ -597,6 +959,9 @@
         let winner = null;
         let turnCount = { X: 0, O: 0 };
         let gameOver = false;
+        let winningCombo = null;
+        let lastPlacedIndex = null;
+        let lastDisappearedIndex = null;
 
         // Multiplayer state
         let peer = null;
@@ -607,6 +972,7 @@
         let connectionAttempts = 0;
         const MAX_CONNECTION_ATTEMPTS = 3;
         const CONNECTION_TIMEOUT = 15000;
+        let currentRoomCode = null;
 
         // Heartbeat state
         let heartbeatInterval = null;
@@ -618,15 +984,269 @@
         let rematchRequested = false;
         let opponentRematchRequested = false;
 
-        // ICE servers configuration
+        // Spectator state
+        let isSpectator = false;
+        let spectators = [];
+        let spectatorConnections = [];
+
+        // Audio state
+        let audioContext = null;
+        let isMuted = localStorage.getItem('ttt-muted') === 'true';
+
+        // Reconnection state
+        const RECONNECT_TIMEOUT = 60000;
+        let reconnectTimer = null;
+        let isReconnecting = false;
+
+        // ICE servers configuration with TURN servers for better NAT traversal
         const iceServers = [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
             { urls: 'stun:stun3.l.google.com:19302' },
             { urls: 'stun:stun4.l.google.com:19302' },
-            { urls: 'stun:stun.cloudflare.com:3478' }
+            { urls: 'stun:stun.cloudflare.com:3478' },
+            // TURN servers for symmetric NAT traversal
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            }
         ];
+
+        // ==================== SOUND EFFECTS ====================
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        }
+
+        function playTone(frequency, duration, type = 'sine', volume = 0.3) {
+            if (isMuted) return;
+            try {
+                const ctx = initAudio();
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+
+                oscillator.frequency.value = frequency;
+                oscillator.type = type;
+                gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+                oscillator.start(ctx.currentTime);
+                oscillator.stop(ctx.currentTime + duration);
+            } catch (e) {
+                console.log('Audio not available');
+            }
+        }
+
+        function playPlaceSound() {
+            playTone(600, 0.1, 'sine', 0.2);
+            setTimeout(() => playTone(800, 0.08, 'sine', 0.15), 50);
+        }
+
+        function playDisappearSound() {
+            playTone(400, 0.15, 'sine', 0.2);
+            setTimeout(() => playTone(300, 0.2, 'sine', 0.15), 80);
+        }
+
+        function playWinSound() {
+            const notes = [523, 659, 784, 1047];
+            notes.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 0.2, 'sine', 0.25), i * 100);
+            });
+        }
+
+        function playLoseSound() {
+            const notes = [400, 350, 300, 250];
+            notes.forEach((freq, i) => {
+                setTimeout(() => playTone(freq, 0.25, 'sawtooth', 0.15), i * 150);
+            });
+        }
+
+        function playConnectSound() {
+            playTone(500, 0.1, 'sine', 0.2);
+            setTimeout(() => playTone(700, 0.15, 'sine', 0.2), 100);
+        }
+
+        function playDisconnectSound() {
+            playTone(500, 0.15, 'sine', 0.2);
+            setTimeout(() => playTone(350, 0.2, 'sine', 0.2), 100);
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            localStorage.setItem('ttt-muted', isMuted);
+            updateMuteIcon();
+            if (!isMuted) {
+                playTone(600, 0.1, 'sine', 0.15);
+            }
+        }
+
+        function updateMuteIcon() {
+            document.getElementById('sound-icon').textContent = isMuted ? '🔇' : '🔊';
+        }
+
+        // ==================== THEME SYSTEM ====================
+        function setTheme(theme) {
+            document.body.className = '';
+            if (theme !== 'classic') {
+                document.body.classList.add('theme-' + theme);
+            }
+            localStorage.setItem('ttt-theme', theme);
+            document.getElementById('theme-select').value = theme;
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('ttt-theme') || 'classic';
+            setTheme(savedTheme);
+        }
+
+        // ==================== GAME STATE PERSISTENCE ====================
+        function saveGameState() {
+            if (!isMultiplayer || isSpectator) return;
+
+            const state = {
+                board,
+                currentPlayer,
+                gameHistory,
+                turnCount,
+                winner,
+                gameOver,
+                myPlayer,
+                isHost,
+                roomCode: currentRoomCode,
+                timestamp: Date.now()
+            };
+            sessionStorage.setItem('ttt-game-state', JSON.stringify(state));
+        }
+
+        function loadGameState() {
+            const saved = sessionStorage.getItem('ttt-game-state');
+            if (!saved) return null;
+
+            try {
+                const state = JSON.parse(saved);
+                // Check if state is less than 60 seconds old
+                if (Date.now() - state.timestamp > RECONNECT_TIMEOUT) {
+                    clearGameState();
+                    return null;
+                }
+                return state;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function clearGameState() {
+            sessionStorage.removeItem('ttt-game-state');
+        }
+
+        function checkForReconnection() {
+            const savedState = loadGameState();
+            if (savedState && savedState.roomCode) {
+                showReconnectDialog(savedState);
+            }
+        }
+
+        function showReconnectDialog(savedState) {
+            document.getElementById('reconnect-message').textContent =
+                `Found a saved game as Player ${savedState.myPlayer}. Reconnect?`;
+            document.getElementById('reconnect-overlay').classList.remove('hidden');
+
+            window.savedStateForReconnect = savedState;
+        }
+
+        function attemptReconnection() {
+            const savedState = window.savedStateForReconnect;
+            if (!savedState) {
+                abandonReconnection();
+                return;
+            }
+
+            document.getElementById('reconnect-title').textContent = 'Reconnecting...';
+            document.getElementById('reconnect-message').textContent = 'Please wait...';
+            document.getElementById('reconnect-btn').disabled = true;
+            document.getElementById('reconnect-btn').textContent = 'Connecting...';
+
+            isReconnecting = true;
+            currentRoomCode = savedState.roomCode;
+            myPlayer = savedState.myPlayer;
+            isHost = savedState.isHost;
+
+            // Restore game state
+            board = savedState.board;
+            currentPlayer = savedState.currentPlayer;
+            gameHistory = savedState.gameHistory;
+            turnCount = savedState.turnCount;
+            winner = savedState.winner;
+            gameOver = savedState.gameOver;
+
+            if (isHost) {
+                // Host recreates the room
+                createRoomForReconnect(savedState.roomCode);
+            } else {
+                // Client reconnects
+                attemptConnection(savedState.roomCode);
+            }
+        }
+
+        function createRoomForReconnect(roomCode) {
+            peer = new Peer('ttt-' + roomCode, {
+                debug: 1,
+                config: { iceServers }
+            });
+
+            peer.on('open', function(id) {
+                console.log('Reconnected as host:', id);
+                document.getElementById('reconnect-overlay').classList.add('hidden');
+                isMultiplayer = true;
+                isReconnecting = false;
+                startGame();
+                updateDisplay();
+                if (gameOver && winner) showWinner();
+            });
+
+            peer.on('connection', function(conn) {
+                handleIncomingConnection(conn);
+            });
+
+            peer.on('error', function(err) {
+                console.error('Reconnect error:', err);
+                document.getElementById('reconnect-title').textContent = 'Reconnection Failed';
+                document.getElementById('reconnect-message').textContent =
+                    'Could not reconnect. The room may no longer exist.';
+                document.getElementById('reconnect-btn').disabled = false;
+                document.getElementById('reconnect-btn').textContent = 'Try Again';
+            });
+        }
+
+        function abandonReconnection() {
+            console.log('abandonReconnection called');
+            clearGameState();
+            console.log('sessionStorage cleared');
+            const overlay = document.getElementById('reconnect-overlay');
+            console.log('overlay element:', overlay);
+            overlay.classList.add('hidden');
+            console.log('hidden class added, classList:', overlay.classList);
+            window.savedStateForReconnect = null;
+            isReconnecting = false;
+            console.log('abandonReconnection complete');
+        }
 
         const winningCombinations = [
             [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -638,15 +1258,18 @@
             for (let combo of winningCombinations) {
                 const [a, b, c] = combo;
                 if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    winningCombo = combo;
                     return board[a];
                 }
             }
+            winningCombo = null;
             return null;
         }
 
         function makeMove(index) {
             if (board[index] || gameOver) return;
             if (isMultiplayer && currentPlayer !== myPlayer) return;
+            if (isSpectator) return;
 
             const newBoard = [...board];
             newBoard[index] = currentPlayer;
@@ -657,33 +1280,61 @@
             newHistory[currentPlayer].push(index);
             newTurnCount[currentPlayer]++;
 
+            lastPlacedIndex = index;
+            lastDisappearedIndex = null;
+
             if (newTurnCount[currentPlayer] === 4) {
                 const oldestMove = newHistory[currentPlayer].shift();
                 newBoard[oldestMove] = null;
                 newTurnCount[currentPlayer] = 3;
+                lastDisappearedIndex = oldestMove;
             }
 
             board = newBoard;
             gameHistory = newHistory;
             turnCount = newTurnCount;
 
+            // Play sounds
+            playPlaceSound();
+            if (lastDisappearedIndex !== null) {
+                setTimeout(playDisappearSound, 150);
+            }
+
             const gameWinner = checkWinner(board);
             if (gameWinner) {
                 winner = gameWinner;
                 gameOver = true;
+                if (isMultiplayer) {
+                    if (winner === myPlayer) {
+                        playWinSound();
+                    } else {
+                        playLoseSound();
+                    }
+                } else {
+                    playWinSound();
+                }
                 showWinner();
             } else {
                 currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
             }
 
             updateDisplay();
+            saveGameState();
 
             if (isMultiplayer && connection && connection.open) {
                 connection.send({
                     type: 'move',
-                    gameState: { board, currentPlayer, gameHistory, turnCount, winner, gameOver }
+                    gameState: { board, currentPlayer, gameHistory, turnCount, winner, gameOver, winningCombo },
+                    lastPlacedIndex,
+                    lastDisappearedIndex
                 });
             }
+
+            // Broadcast to spectators
+            broadcastToSpectators({
+                type: 'game-state',
+                gameState: { board, currentPlayer, gameHistory, turnCount, winner, gameOver, winningCombo }
+            });
         }
 
         function resetGame() {
@@ -693,38 +1344,106 @@
             winner = null;
             turnCount = { X: 0, O: 0 };
             gameOver = false;
+            winningCombo = null;
+            lastPlacedIndex = null;
+            lastDisappearedIndex = null;
             rematchRequested = false;
             opponentRematchRequested = false;
             updateDisplay();
             hideWinner();
+            saveGameState();
 
             if (isMultiplayer && connection && connection.open) {
                 connection.send({ type: 'reset' });
             }
+
+            // Broadcast to spectators
+            broadcastToSpectators({
+                type: 'game-state',
+                gameState: { board, currentPlayer, gameHistory, turnCount, winner, gameOver, winningCombo }
+            });
         }
 
-        function updateDisplay() {
+        function updateDisplay(animatePlace = true, animateDisappear = true) {
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
-                cell.textContent = board[index] || '';
+                const prevContent = cell.textContent;
+                const newContent = board[index] || '';
+
+                cell.textContent = newContent;
                 cell.className = 'cell';
+
                 if (board[index]) {
                     cell.classList.add(board[index].toLowerCase());
+
+                    // Add place animation for newly placed piece
+                    if (animatePlace && index === lastPlacedIndex && prevContent !== newContent) {
+                        cell.classList.add('place-animation');
+                        cell.addEventListener('animationend', function handler() {
+                            cell.classList.remove('place-animation');
+                            cell.removeEventListener('animationend', handler);
+                        });
+                    }
+
+                    // Highlight winning cells
+                    if (winningCombo && winningCombo.includes(index)) {
+                        cell.classList.add('winning-cell');
+                    }
                 }
-                cell.disabled = gameOver || board[index] || (isMultiplayer && currentPlayer !== myPlayer);
+
+                // Add disappear animation
+                if (animateDisappear && index === lastDisappearedIndex && prevContent && !newContent) {
+                    // Animation already played, cell is now empty
+                }
+
+                const isDisabled = gameOver || board[index] ||
+                    (isMultiplayer && currentPlayer !== myPlayer) || isSpectator;
+                cell.disabled = isDisabled;
             });
 
             document.getElementById('x-count').textContent = turnCount.X;
             document.getElementById('o-count').textContent = turnCount.O;
 
+            const currentPlayerEl = document.getElementById('current-player');
             if (!gameOver) {
-                if (isMultiplayer) {
+                if (isSpectator) {
+                    currentPlayerEl.textContent = `Player ${currentPlayer}'s Turn`;
+                    currentPlayerEl.classList.remove('pulse');
+                } else if (isMultiplayer) {
                     const isMyTurn = currentPlayer === myPlayer;
-                    document.getElementById('current-player').textContent =
-                        isMyTurn ? `Your Turn (${myPlayer})` : `Opponent's Turn (${currentPlayer})`;
+                    currentPlayerEl.textContent = isMyTurn ? `Your Turn (${myPlayer})` : `Opponent's Turn (${currentPlayer})`;
+                    if (isMyTurn) {
+                        currentPlayerEl.classList.add('pulse');
+                    } else {
+                        currentPlayerEl.classList.remove('pulse');
+                    }
                 } else {
-                    document.getElementById('current-player').textContent = `Player ${currentPlayer}'s Turn`;
+                    currentPlayerEl.textContent = `Player ${currentPlayer}'s Turn`;
+                    currentPlayerEl.classList.remove('pulse');
                 }
+            } else {
+                currentPlayerEl.classList.remove('pulse');
+            }
+
+            // Update spectator count display
+            updateSpectatorCount();
+        }
+
+        function broadcastToSpectators(data) {
+            spectatorConnections.forEach(conn => {
+                if (conn && conn.open) {
+                    conn.send(data);
+                }
+            });
+        }
+
+        function updateSpectatorCount() {
+            const countEl = document.getElementById('spectator-count');
+            const activeSpectators = spectatorConnections.filter(c => c && c.open).length;
+            if (activeSpectators > 0 && isHost) {
+                countEl.textContent = `${activeSpectators} spectator${activeSpectators > 1 ? 's' : ''} watching`;
+            } else {
+                countEl.textContent = '';
             }
         }
 
@@ -732,7 +1451,10 @@
             document.getElementById('winner-section').classList.remove('hidden');
             document.getElementById('current-turn').classList.add('hidden');
 
-            if (isMultiplayer) {
+            if (isSpectator) {
+                document.getElementById('winner-text').textContent = `Player ${winner} Wins!`;
+                document.getElementById('rematch-section').classList.add('hidden');
+            } else if (isMultiplayer) {
                 const youWon = winner === myPlayer;
                 document.getElementById('winner-text').textContent = youWon ? 'You Win!' : 'You Lose!';
                 document.getElementById('rematch-section').classList.remove('hidden');
@@ -758,6 +1480,42 @@
             });
         }
 
+        function handleIncomingConnection(conn) {
+            conn.on('open', function() {
+                conn.on('data', function(data) {
+                    if (data.type === 'identify') {
+                        if (data.role === 'spectator') {
+                            console.log('Spectator connected');
+                            spectatorConnections.push(conn);
+                            // Send current game state to spectator
+                            conn.send({
+                                type: 'game-state',
+                                gameState: { board, currentPlayer, gameHistory, turnCount, winner, gameOver, winningCombo }
+                            });
+                            updateSpectatorCount();
+
+                            conn.on('close', function() {
+                                spectatorConnections = spectatorConnections.filter(c => c !== conn);
+                                updateSpectatorCount();
+                            });
+                        } else if (data.role === 'player') {
+                            if (connection && connection.open) {
+                                conn.send({ type: 'room-full' });
+                                conn.close();
+                            } else {
+                                connection = conn;
+                                setupConnection();
+                                playConnectSound();
+                            }
+                        }
+                    }
+                });
+
+                // Send request for identification
+                conn.send({ type: 'identify-request' });
+            });
+        }
+
         function getBaseUrl() {
             // Use the actual deployed URL or current origin
             const url = new URL(window.location.href);
@@ -770,6 +1528,11 @@
             return baseUrl + '?room=' + roomCode;
         }
 
+        function getSpectateUrl(roomCode) {
+            const baseUrl = getBaseUrl();
+            return baseUrl + '?spectate=' + roomCode;
+        }
+
         function createRoom() {
             showStatus('Creating room...', 'waiting');
             peer = createPeer();
@@ -778,8 +1541,8 @@
                 console.log('Room created:', id);
                 isHost = true;
                 myPlayer = 'X';
-                const roomCode = id.replace('ttt-', '');
-                const roomUrl = getRoomUrl(roomCode);
+                currentRoomCode = id.replace('ttt-', '');
+                const roomUrl = getRoomUrl(currentRoomCode);
                 document.getElementById('room-url').textContent = roomUrl;
                 document.getElementById('initial-choice').classList.add('hidden');
                 document.getElementById('room-created').classList.remove('hidden');
@@ -788,12 +1551,7 @@
 
             peer.on('connection', function(conn) {
                 console.log('Incoming connection');
-                if (connection && connection.open) {
-                    conn.close();
-                    return;
-                }
-                connection = conn;
-                setupConnection();
+                handleIncomingConnection(conn);
             });
 
             peer.on('error', function(err) {
@@ -807,15 +1565,136 @@
             });
         }
 
+        // Spectator functions
+        function showSpectateRoom() {
+            document.getElementById('initial-choice').classList.add('hidden');
+            document.getElementById('join-room').classList.remove('hidden');
+            document.getElementById('room-code-input').placeholder = 'Enter room code to spectate';
+            document.getElementById('join-button').textContent = 'Spectate';
+            document.getElementById('join-button').onclick = spectateRoom;
+            document.getElementById('room-code-input').focus();
+        }
+
+        function spectateRoom() {
+            const roomCode = document.getElementById('room-code-input').value.trim();
+            if (!roomCode) {
+                showStatus('Please enter a room code', 'error');
+                return;
+            }
+
+            showStatus('Connecting as spectator...', 'waiting');
+            document.getElementById('join-button').disabled = true;
+            isSpectator = true;
+
+            peer = createPeer();
+
+            peer.on('open', function(id) {
+                console.log('Spectator peer ID:', id);
+
+                setTimeout(function() {
+                    connection = peer.connect('ttt-' + roomCode, { reliable: true });
+
+                    if (!connection) {
+                        showStatus('Failed to connect', 'error');
+                        document.getElementById('join-button').disabled = false;
+                        return;
+                    }
+
+                    connection.on('open', function() {
+                        console.log('Connected as spectator');
+                        // Identify as spectator
+                        connection.send({ type: 'identify', role: 'spectator' });
+                    });
+
+                    connection.on('data', function(data) {
+                        handleSpectatorData(data);
+                    });
+
+                    connection.on('close', function() {
+                        showConnectionStatus(false);
+                        playDisconnectSound();
+                    });
+
+                    connection.on('error', function(err) {
+                        console.error('Spectator connection error:', err);
+                        showStatus('Connection error', 'error');
+                    });
+
+                    const timeout = setTimeout(function() {
+                        if (!connection || !connection.open) {
+                            showStatus('Connection timeout', 'error');
+                            document.getElementById('join-button').disabled = false;
+                        }
+                    }, CONNECTION_TIMEOUT);
+
+                    connection.on('open', function() {
+                        clearTimeout(timeout);
+                        document.getElementById('connection-status').classList.add('hidden');
+                        document.getElementById('join-button').disabled = false;
+                        startSpectatorMode();
+                    });
+                }, 500);
+            });
+
+            peer.on('error', function(err) {
+                console.error('Peer error:', err);
+                showStatus('Connection error: ' + err.type, 'error');
+                document.getElementById('join-button').disabled = false;
+            });
+        }
+
+        function handleSpectatorData(data) {
+            console.log('Spectator received:', data.type);
+
+            switch (data.type) {
+                case 'game-state':
+                    board = data.gameState.board;
+                    currentPlayer = data.gameState.currentPlayer;
+                    gameHistory = data.gameState.gameHistory;
+                    turnCount = data.gameState.turnCount;
+                    winner = data.gameState.winner;
+                    gameOver = data.gameState.gameOver;
+                    winningCombo = data.gameState.winningCombo;
+                    updateDisplay(false, false);
+                    if (gameOver && winner) showWinner();
+                    else hideWinner();
+                    break;
+
+                case 'identify-request':
+                    connection.send({ type: 'identify', role: 'spectator' });
+                    break;
+            }
+        }
+
+        function startSpectatorMode() {
+            isMultiplayer = true;
+            clearUrlParams();
+            document.getElementById('multiplayer-setup').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            document.getElementById('leave-button').classList.remove('hidden');
+            document.getElementById('spectator-banner').classList.remove('hidden');
+            document.getElementById('connection-indicator').classList.add('hidden');
+            playConnectSound();
+            updateDisplay();
+        }
+
         function showJoinRoom() {
             document.getElementById('initial-choice').classList.add('hidden');
             document.getElementById('join-room').classList.remove('hidden');
+            document.getElementById('room-code-input').placeholder = 'Enter code here';
+            document.getElementById('join-button').textContent = 'Join';
+            document.getElementById('join-button').onclick = joinRoom;
             document.getElementById('room-code-input').focus();
+            isSpectator = false;
         }
 
         function handleJoinKeypress(event) {
             if (event.key === 'Enter') {
-                joinRoom();
+                if (isSpectator) {
+                    spectateRoom();
+                } else {
+                    joinRoom();
+                }
             }
         }
 
@@ -826,6 +1705,8 @@
                 return;
             }
 
+            isSpectator = false;
+            currentRoomCode = roomCode;
             connectionAttempts = 0;
             attemptConnection(roomCode);
         }
@@ -854,6 +1735,23 @@
                         return;
                     }
 
+                    connection.on('open', function() {
+                        // Identify as player
+                        connection.send({ type: 'identify', role: 'player' });
+                    });
+
+                    connection.on('data', function(data) {
+                        if (data.type === 'identify-request') {
+                            connection.send({ type: 'identify', role: 'player' });
+                        } else if (data.type === 'room-full') {
+                            showStatus('Room is full. Try spectating instead.', 'error');
+                            document.getElementById('join-button').disabled = false;
+                            connection.close();
+                        } else {
+                            handlePeerData(data);
+                        }
+                    });
+
                     setupConnection();
 
                     const timeout = setTimeout(function() {
@@ -879,13 +1777,24 @@
 
             if (connectionAttempts < MAX_CONNECTION_ATTEMPTS) {
                 const delay = Math.pow(2, connectionAttempts) * 1000;
-                showStatus(`Retrying in ${delay/1000}s...`, 'waiting');
+                if (isReconnecting) {
+                    document.getElementById('reconnect-message').textContent = `Retrying in ${delay/1000}s...`;
+                } else {
+                    showStatus(`Retrying in ${delay/1000}s...`, 'waiting');
+                }
                 setTimeout(function() {
                     attemptConnection(roomCode);
                 }, delay);
             } else {
-                showStatus('Failed to connect. Check the room code and try again.', 'error');
-                document.getElementById('join-button').disabled = false;
+                if (isReconnecting) {
+                    document.getElementById('reconnect-title').textContent = 'Reconnection Failed';
+                    document.getElementById('reconnect-message').textContent = 'Could not reconnect to the game.';
+                    document.getElementById('reconnect-btn').disabled = false;
+                    document.getElementById('reconnect-btn').textContent = 'Try Again';
+                } else {
+                    showStatus('Failed to connect. Check the room code and try again.', 'error');
+                    document.getElementById('join-button').disabled = false;
+                }
             }
         }
 
@@ -896,6 +1805,12 @@
                 console.log('Connection established!');
                 document.getElementById('connection-status').classList.add('hidden');
                 document.getElementById('join-button').disabled = false;
+
+                // Hide reconnect overlay if it was showing
+                document.getElementById('reconnect-overlay').classList.add('hidden');
+                isReconnecting = false;
+
+                playConnectSound();
                 startGame();
                 startHeartbeat();
             });
@@ -907,6 +1822,7 @@
             connection.on('close', function() {
                 console.log('Connection closed');
                 stopHeartbeat();
+                playDisconnectSound();
                 showConnectionStatus(false);
             });
 
@@ -922,14 +1838,40 @@
 
             switch (data.type) {
                 case 'move':
+                    // Update animation indices
+                    lastPlacedIndex = data.lastPlacedIndex;
+                    lastDisappearedIndex = data.lastDisappearedIndex;
+
                     board = data.gameState.board;
                     currentPlayer = data.gameState.currentPlayer;
                     gameHistory = data.gameState.gameHistory;
                     turnCount = data.gameState.turnCount;
                     winner = data.gameState.winner;
                     gameOver = data.gameState.gameOver;
-                    if (gameOver && winner) showWinner();
+                    winningCombo = data.gameState.winningCombo;
+
+                    // Play sounds for opponent's move
+                    playPlaceSound();
+                    if (lastDisappearedIndex !== null) {
+                        setTimeout(playDisappearSound, 150);
+                    }
+
+                    if (gameOver && winner) {
+                        if (winner === myPlayer) {
+                            playWinSound();
+                        } else {
+                            playLoseSound();
+                        }
+                        showWinner();
+                    }
                     updateDisplay();
+                    saveGameState();
+
+                    // Broadcast to spectators
+                    broadcastToSpectators({
+                        type: 'game-state',
+                        gameState: { board, currentPlayer, gameHistory, turnCount, winner, gameOver, winningCombo }
+                    });
                     break;
 
                 case 'reset':
@@ -939,10 +1881,20 @@
                     winner = null;
                     turnCount = { X: 0, O: 0 };
                     gameOver = false;
+                    winningCombo = null;
+                    lastPlacedIndex = null;
+                    lastDisappearedIndex = null;
                     rematchRequested = false;
                     opponentRematchRequested = false;
                     updateDisplay();
                     hideWinner();
+                    saveGameState();
+
+                    // Broadcast to spectators
+                    broadcastToSpectators({
+                        type: 'game-state',
+                        gameState: { board, currentPlayer, gameHistory, turnCount, winner, gameOver, winningCombo }
+                    });
                     break;
 
                 case 'ping':
@@ -964,6 +1916,10 @@
 
                 case 'rematch-start':
                     startRematch();
+                    break;
+
+                case 'identify-request':
+                    connection.send({ type: 'identify', role: 'player' });
                     break;
             }
         }
@@ -1048,6 +2004,12 @@
         }
 
         function leaveGame() {
+            // Close all spectator connections
+            spectatorConnections.forEach(conn => {
+                if (conn && conn.open) conn.close();
+            });
+            spectatorConnections = [];
+
             if (connection) {
                 connection.close();
             }
@@ -1060,7 +2022,13 @@
             isMultiplayer = false;
             myPlayer = null;
             connection = null;
+            isSpectator = false;
+            currentRoomCode = null;
+            winningCombo = null;
+            lastPlacedIndex = null;
+            lastDisappearedIndex = null;
 
+            clearGameState();
             resetGame();
             clearUrlParams();
             document.getElementById('game-container').classList.add('hidden');
@@ -1068,6 +2036,7 @@
             document.getElementById('initial-choice').classList.remove('hidden');
             document.getElementById('room-created').classList.add('hidden');
             document.getElementById('join-room').classList.add('hidden');
+            document.getElementById('spectator-banner').classList.add('hidden');
         }
 
         function copyRoomUrl() {
@@ -1145,24 +2114,62 @@
         function checkUrlForRoom() {
             const params = new URLSearchParams(window.location.search);
             const roomCode = params.get('room');
+            const spectateCode = params.get('spectate');
+
             if (roomCode) {
                 // Auto-join the room from URL
                 document.getElementById('room-code-input').value = roomCode;
                 showJoinRoom();
                 joinRoom();
+            } else if (spectateCode) {
+                // Auto-spectate the room from URL
+                document.getElementById('room-code-input').value = spectateCode;
+                showSpectateRoom();
+                spectateRoom();
+            } else {
+                // Check for reconnection only if not joining via URL
+                checkForReconnection();
             }
         }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            // Load saved preferences
+            loadTheme();
+            updateMuteIcon();
+
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
                 cell.addEventListener('click', () => makeMove(index));
             });
+
+            // Reconnection dialog buttons
+            document.getElementById('reconnect-btn').addEventListener('click', function() {
+                console.log('Reconnect button clicked');
+                attemptReconnection();
+            });
+            document.getElementById('abandon-btn').addEventListener('click', function() {
+                console.log('Abandon button clicked');
+                abandonReconnection();
+            });
+
             updateDisplay();
 
-            // Check if joining via URL
+            // Check if joining via URL or reconnecting
             checkUrlForRoom();
+
+            // Initialize audio context on first user interaction
+            document.body.addEventListener('click', function initAudioOnClick() {
+                initAudio();
+                document.body.removeEventListener('click', initAudioOnClick);
+            }, { once: true });
+        });
+
+        // Save state before page unload
+        window.addEventListener('beforeunload', function() {
+            if (isMultiplayer && !isSpectator) {
+                saveGameState();
+            }
         });
     </script>
 </body>
