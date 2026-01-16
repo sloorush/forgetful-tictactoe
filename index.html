@@ -343,6 +343,19 @@
             margin-bottom: 8px;
         }
 
+        .room-code-display .url-display {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            font-family: monospace;
+            color: #374151;
+            word-break: break-all;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
         .room-code-display .code-row {
             display: flex;
             align-items: center;
@@ -477,11 +490,9 @@
 
             <div id="room-created" class="hidden">
                 <div class="room-code-display">
-                    <div class="label">Share this code with your friend:</div>
-                    <div class="code-row">
-                        <span class="code" id="room-code"></span>
-                        <button class="copy-button" onclick="copyRoomCode()">Copy</button>
-                    </div>
+                    <div class="label">Share this link with your friend:</div>
+                    <div class="url-display" id="room-url"></div>
+                    <button class="copy-button" onclick="copyRoomUrl()" style="width: 100%;">Copy Link</button>
                 </div>
                 <div class="connection-status waiting" id="waiting-status">Waiting for opponent to join...</div>
                 <button class="secondary-button" style="width: 100%; margin-top: 12px;" onclick="cancelRoom()">Cancel</button>
@@ -727,6 +738,18 @@
             });
         }
 
+        function getBaseUrl() {
+            // Use the actual deployed URL or current origin
+            const url = new URL(window.location.href);
+            url.search = '';
+            return url.toString();
+        }
+
+        function getRoomUrl(roomCode) {
+            const baseUrl = getBaseUrl();
+            return baseUrl + '?room=' + roomCode;
+        }
+
         function createRoom() {
             showStatus('Creating room...', 'waiting');
             peer = createPeer();
@@ -735,7 +758,9 @@
                 console.log('Room created:', id);
                 isHost = true;
                 myPlayer = 'X';
-                document.getElementById('room-code').textContent = id.replace('ttt-', '');
+                const roomCode = id.replace('ttt-', '');
+                const roomUrl = getRoomUrl(roomCode);
+                document.getElementById('room-url').textContent = roomUrl;
                 document.getElementById('initial-choice').classList.add('hidden');
                 document.getElementById('room-created').classList.remove('hidden');
                 document.getElementById('connection-status').classList.add('hidden');
@@ -967,6 +992,7 @@
 
         function startGame() {
             isMultiplayer = true;
+            clearUrlParams();
             document.getElementById('multiplayer-setup').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
             document.getElementById('leave-button').classList.remove('hidden');
@@ -996,6 +1022,7 @@
                 peer.destroy();
                 peer = null;
             }
+            clearUrlParams();
             document.getElementById('room-created').classList.add('hidden');
             document.getElementById('initial-choice').classList.remove('hidden');
         }
@@ -1015,6 +1042,7 @@
             connection = null;
 
             resetGame();
+            clearUrlParams();
             document.getElementById('game-container').classList.add('hidden');
             document.getElementById('multiplayer-setup').classList.remove('hidden');
             document.getElementById('initial-choice').classList.remove('hidden');
@@ -1022,14 +1050,14 @@
             document.getElementById('join-room').classList.add('hidden');
         }
 
-        function copyRoomCode() {
-            const code = document.getElementById('room-code').textContent;
-            navigator.clipboard.writeText(code).then(function() {
+        function copyRoomUrl() {
+            const url = document.getElementById('room-url').textContent;
+            navigator.clipboard.writeText(url).then(function() {
                 const btn = document.querySelector('.copy-button');
                 btn.textContent = 'Copied!';
                 btn.classList.add('copied');
                 setTimeout(function() {
-                    btn.textContent = 'Copy';
+                    btn.textContent = 'Copy Link';
                     btn.classList.remove('copied');
                 }, 2000);
             });
@@ -1088,6 +1116,23 @@
             hideWinner();
         }
 
+        function clearUrlParams() {
+            const url = new URL(window.location.href);
+            url.search = '';
+            window.history.replaceState({}, document.title, url.toString());
+        }
+
+        function checkUrlForRoom() {
+            const params = new URLSearchParams(window.location.search);
+            const roomCode = params.get('room');
+            if (roomCode) {
+                // Auto-join the room from URL
+                document.getElementById('room-code-input').value = roomCode;
+                showJoinRoom();
+                joinRoom();
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             const cells = document.querySelectorAll('.cell');
@@ -1095,6 +1140,9 @@
                 cell.addEventListener('click', () => makeMove(index));
             });
             updateDisplay();
+
+            // Check if joining via URL
+            checkUrlForRoom();
         });
     </script>
 </body>
