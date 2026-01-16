@@ -137,8 +137,13 @@
             color: #dc2626;
         }
 
+        .button-row {
+            display: flex;
+            gap: 12px;
+        }
+
         .reset-button {
-            width: 100%;
+            flex: 1;
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
             color: white;
             font-weight: 600;
@@ -162,6 +167,22 @@
 
         .reset-icon {
             margin-right: 8px;
+        }
+
+        .leave-button {
+            background: #ef4444;
+            color: white;
+            font-weight: 600;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .leave-button:hover {
+            background: #dc2626;
         }
 
         .rules {
@@ -238,9 +259,14 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .primary-button:hover {
+        .primary-button:hover:not(:disabled) {
             background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
             transform: translateY(-1px);
+        }
+
+        .primary-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .secondary-button {
@@ -317,12 +343,115 @@
             margin-bottom: 8px;
         }
 
+        .room-code-display .code-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
         .room-code-display .code {
             font-size: 1.5rem;
             font-weight: bold;
             color: #1f2937;
             font-family: monospace;
             letter-spacing: 2px;
+        }
+
+        .copy-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .copy-button:hover {
+            background: #2563eb;
+        }
+
+        .copy-button.copied {
+            background: #059669;
+        }
+
+        .connection-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .connection-indicator.online {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .connection-indicator.offline {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .connection-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-indicator.online .dot {
+            background: #059669;
+        }
+
+        .connection-indicator.offline .dot {
+            background: #dc2626;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .rematch-section {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .rematch-button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-weight: 600;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .rematch-button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .rematch-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .rematch-status {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -334,7 +463,7 @@
         </div>
 
         <div id="multiplayer-setup" class="multiplayer-setup">
-            <h2>Multiplayer Setup</h2>
+            <h2>Play Online</h2>
 
             <div id="connection-status" class="connection-status hidden"></div>
 
@@ -349,57 +478,73 @@
             <div id="room-created" class="hidden">
                 <div class="room-code-display">
                     <div class="label">Share this code with your friend:</div>
-                    <div class="code" id="room-code"></div>
+                    <div class="code-row">
+                        <span class="code" id="room-code"></span>
+                        <button class="copy-button" onclick="copyRoomCode()">Copy</button>
+                    </div>
                 </div>
-                <div class="connection-status waiting">Waiting for opponent to join...</div>
+                <div class="connection-status waiting" id="waiting-status">Waiting for opponent to join...</div>
+                <button class="secondary-button" style="width: 100%; margin-top: 12px;" onclick="cancelRoom()">Cancel</button>
             </div>
 
             <div id="join-room" class="hidden">
                 <div class="input-group">
                     <label for="room-code-input">Enter Room Code:</label>
-                    <input type="text" id="room-code-input" placeholder="Enter code here">
+                    <input type="text" id="room-code-input" placeholder="Enter code here" onkeypress="handleJoinKeypress(event)">
                 </div>
                 <div class="button-group">
-                    <button class="primary-button" onclick="joinRoom()">Join</button>
+                    <button class="primary-button" id="join-button" onclick="joinRoom()">Join</button>
                     <button class="secondary-button" onclick="backToMenu()">Back</button>
                 </div>
             </div>
         </div>
 
         <div id="game-container" class="hidden">
-        <div class="game-status">
-            <div id="winner-section" class="winner-section hidden">
-                <div class="trophy">🏆</div>
-                <div id="winner-text" class="winner-text"></div>
+            <div id="connection-indicator" class="connection-indicator online hidden">
+                <span class="dot"></span>
+                <span id="connection-text">Connected</span>
             </div>
-            <div id="current-turn" class="current-turn">
-                <div id="current-player" class="current-player">Player X's Turn</div>
-                <div class="move-count">
-                    <span class="x-count">X: <span id="x-count">0</span>/3 moves</span>
-                    <span style="margin: 0 16px;">•</span>
-                    <span class="o-count">O: <span id="o-count">0</span>/3 moves</span>
+
+            <div class="game-status">
+                <div id="winner-section" class="winner-section hidden">
+                    <div class="trophy">🏆</div>
+                    <div id="winner-text" class="winner-text"></div>
+                    <div id="rematch-section" class="rematch-section hidden">
+                        <button class="rematch-button" id="rematch-button" onclick="requestRematch()">Rematch</button>
+                        <div id="rematch-status" class="rematch-status"></div>
+                    </div>
+                </div>
+                <div id="current-turn" class="current-turn">
+                    <div id="current-player" class="current-player">Player X's Turn</div>
+                    <div class="move-count">
+                        <span class="x-count">X: <span id="x-count">0</span>/3 moves</span>
+                        <span style="margin: 0 16px;">•</span>
+                        <span class="o-count">O: <span id="o-count">0</span>/3 moves</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="game-board">
-            <div class="board" id="board">
-                <button class="cell" data-index="0"></button>
-                <button class="cell" data-index="1"></button>
-                <button class="cell" data-index="2"></button>
-                <button class="cell" data-index="3"></button>
-                <button class="cell" data-index="4"></button>
-                <button class="cell" data-index="5"></button>
-                <button class="cell" data-index="6"></button>
-                <button class="cell" data-index="7"></button>
-                <button class="cell" data-index="8"></button>
+            <div class="game-board">
+                <div class="board" id="board">
+                    <button class="cell" data-index="0"></button>
+                    <button class="cell" data-index="1"></button>
+                    <button class="cell" data-index="2"></button>
+                    <button class="cell" data-index="3"></button>
+                    <button class="cell" data-index="4"></button>
+                    <button class="cell" data-index="5"></button>
+                    <button class="cell" data-index="6"></button>
+                    <button class="cell" data-index="7"></button>
+                    <button class="cell" data-index="8"></button>
+                </div>
             </div>
-        </div>
 
-        <button class="reset-button" onclick="resetGame()">
-            <span class="reset-icon">↻</span>
-            New Game
-        </button>
+            <div class="button-row">
+                <button class="reset-button" onclick="resetGame()">
+                    <span class="reset-icon">↻</span>
+                    New Game
+                </button>
+                <button id="leave-button" class="leave-button hidden" onclick="leaveGame()">Leave</button>
+            </div>
         </div>
 
         <div class="rules">
@@ -414,6 +559,7 @@
     </div>
 
     <script>
+        // Game state
         let board = Array(9).fill(null);
         let currentPlayer = 'X';
         let gameHistory = { X: [], O: [] };
@@ -421,17 +567,40 @@
         let turnCount = { X: 0, O: 0 };
         let gameOver = false;
 
-        // Multiplayer variables
+        // Multiplayer state
         let peer = null;
         let connection = null;
         let isMultiplayer = false;
-        let myPlayer = null; // 'X' or 'O'
+        let myPlayer = null;
         let isHost = false;
+        let connectionAttempts = 0;
+        const MAX_CONNECTION_ATTEMPTS = 3;
+        const CONNECTION_TIMEOUT = 15000;
+
+        // Heartbeat state
+        let heartbeatInterval = null;
+        let lastPongReceived = null;
+        const HEARTBEAT_INTERVAL = 5000;
+        const HEARTBEAT_TIMEOUT = 15000;
+
+        // Rematch state
+        let rematchRequested = false;
+        let opponentRematchRequested = false;
+
+        // ICE servers configuration
+        const iceServers = [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' },
+            { urls: 'stun:stun.cloudflare.com:3478' }
+        ];
 
         const winningCombinations = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
-            [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
-            [0, 4, 8], [2, 4, 6] // diagonals
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
         ];
 
         function checkWinner(board) {
@@ -446,32 +615,27 @@
 
         function makeMove(index) {
             if (board[index] || gameOver) return;
-
-            // In multiplayer mode, only allow moves if it's your turn
             if (isMultiplayer && currentPlayer !== myPlayer) return;
 
             const newBoard = [...board];
             newBoard[index] = currentPlayer;
 
-            const newHistory = { ...gameHistory };
+            const newHistory = { X: [...gameHistory.X], O: [...gameHistory.O] };
             const newTurnCount = { ...turnCount };
 
-            // Add the move to history
             newHistory[currentPlayer].push(index);
             newTurnCount[currentPlayer]++;
 
-            // Check if we need to remove the oldest move (on 4th turn)
             if (newTurnCount[currentPlayer] === 4) {
                 const oldestMove = newHistory[currentPlayer].shift();
                 newBoard[oldestMove] = null;
-                newTurnCount[currentPlayer] = 3; // Reset to 3 since we removed one
+                newTurnCount[currentPlayer] = 3;
             }
 
             board = newBoard;
             gameHistory = newHistory;
             turnCount = newTurnCount;
 
-            // Check for winner
             const gameWinner = checkWinner(board);
             if (gameWinner) {
                 winner = gameWinner;
@@ -483,18 +647,10 @@
 
             updateDisplay();
 
-            // Send move to peer in multiplayer
-            if (isMultiplayer && connection) {
+            if (isMultiplayer && connection && connection.open) {
                 connection.send({
                     type: 'move',
-                    gameState: {
-                        board,
-                        currentPlayer,
-                        gameHistory,
-                        turnCount,
-                        winner,
-                        gameOver
-                    }
+                    gameState: { board, currentPlayer, gameHistory, turnCount, winner, gameOver }
                 });
             }
         }
@@ -506,12 +662,17 @@
             winner = null;
             turnCount = { X: 0, O: 0 };
             gameOver = false;
+            rematchRequested = false;
+            opponentRematchRequested = false;
             updateDisplay();
             hideWinner();
+
+            if (isMultiplayer && connection && connection.open) {
+                connection.send({ type: 'reset' });
+            }
         }
 
         function updateDisplay() {
-            // Update board
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
                 cell.textContent = board[index] || '';
@@ -522,11 +683,9 @@
                 cell.disabled = gameOver || board[index] || (isMultiplayer && currentPlayer !== myPlayer);
             });
 
-            // Update turn counter
             document.getElementById('x-count').textContent = turnCount.X;
             document.getElementById('o-count').textContent = turnCount.O;
 
-            // Update current player
             if (!gameOver) {
                 if (isMultiplayer) {
                     const isMyTurn = currentPlayer === myPlayer;
@@ -541,194 +700,277 @@
         function showWinner() {
             document.getElementById('winner-section').classList.remove('hidden');
             document.getElementById('current-turn').classList.add('hidden');
-            document.getElementById('winner-text').textContent = `Player ${winner} Wins!`;
+
+            if (isMultiplayer) {
+                const youWon = winner === myPlayer;
+                document.getElementById('winner-text').textContent = youWon ? 'You Win!' : 'You Lose!';
+                document.getElementById('rematch-section').classList.remove('hidden');
+                updateRematchUI();
+            } else {
+                document.getElementById('winner-text').textContent = `Player ${winner} Wins!`;
+                document.getElementById('rematch-section').classList.add('hidden');
+            }
         }
 
         function hideWinner() {
             document.getElementById('winner-section').classList.add('hidden');
             document.getElementById('current-turn').classList.remove('hidden');
+            document.getElementById('rematch-section').classList.add('hidden');
         }
 
         // Multiplayer functions
-        function createRoom() {
+        function createPeer() {
             const peerId = 'ttt-' + Math.random().toString(36).substr(2, 9);
-            peer = new Peer(peerId, {
-                host: '0.peerjs.com',
-                port: 443,
-                path: '/',
-                secure: true,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
-                    ]
-                }
+            return new Peer(peerId, {
+                debug: 1,
+                config: { iceServers }
             });
+        }
+
+        function createRoom() {
+            showStatus('Creating room...', 'waiting');
+            peer = createPeer();
 
             peer.on('open', function(id) {
-                console.log('Room created with ID:', id);
+                console.log('Room created:', id);
                 isHost = true;
                 myPlayer = 'X';
                 document.getElementById('room-code').textContent = id.replace('ttt-', '');
                 document.getElementById('initial-choice').classList.add('hidden');
                 document.getElementById('room-created').classList.remove('hidden');
+                document.getElementById('connection-status').classList.add('hidden');
             });
 
             peer.on('connection', function(conn) {
-                console.log('Incoming connection from:', conn.peer);
-
-                // Only accept the first connection
+                console.log('Incoming connection');
                 if (connection && connection.open) {
-                    console.log('Already connected, rejecting new connection');
                     conn.close();
                     return;
                 }
-
                 connection = conn;
-
-                // For incoming connections, we need to set up listeners immediately
-                // The connection is already open from the peer's perspective
                 setupConnection();
-
-                // Wait a bit for the connection to stabilize before starting
-                setTimeout(function() {
-                    if (connection.open) {
-                        console.log('Incoming connection is open, starting game');
-                        startGame();
-                    }
-                }, 100);
             });
 
             peer.on('error', function(err) {
                 console.error('Peer error:', err);
-                showError('Connection error: ' + err.message);
+                showStatus('Connection error: ' + err.type, 'error');
+            });
+
+            peer.on('disconnected', function() {
+                console.log('Peer disconnected, attempting reconnect...');
+                peer.reconnect();
             });
         }
 
         function showJoinRoom() {
             document.getElementById('initial-choice').classList.add('hidden');
             document.getElementById('join-room').classList.remove('hidden');
+            document.getElementById('room-code-input').focus();
+        }
+
+        function handleJoinKeypress(event) {
+            if (event.key === 'Enter') {
+                joinRoom();
+            }
         }
 
         function joinRoom() {
             const roomCode = document.getElementById('room-code-input').value.trim();
             if (!roomCode) {
-                alert('Please enter a room code');
+                showStatus('Please enter a room code', 'error');
                 return;
             }
 
-            // Show connecting status
-            const statusEl = document.getElementById('connection-status');
-            statusEl.textContent = 'Connecting...';
-            statusEl.className = 'connection-status waiting';
-            statusEl.classList.remove('hidden');
+            connectionAttempts = 0;
+            attemptConnection(roomCode);
+        }
 
-            const peerId = 'ttt-' + Math.random().toString(36).substr(2, 9);
-            peer = new Peer(peerId, {
-                host: '0.peerjs.com',
-                port: 443,
-                path: '/',
-                secure: true,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
-                    ]
-                }
-            });
+        function attemptConnection(roomCode) {
+            connectionAttempts++;
+            const attemptText = connectionAttempts > 1 ? ` (attempt ${connectionAttempts}/${MAX_CONNECTION_ATTEMPTS})` : '';
+            showStatus('Connecting...' + attemptText, 'waiting');
+            document.getElementById('join-button').disabled = true;
+
+            if (peer) {
+                peer.destroy();
+            }
+
+            peer = createPeer();
 
             peer.on('open', function(id) {
                 console.log('My peer ID:', id);
-                console.log('Connecting to:', 'ttt-' + roomCode);
                 myPlayer = 'O';
 
-                // Small delay to ensure peer is ready
                 setTimeout(function() {
-                    console.log('Attempting to connect...');
-                    connection = peer.connect('ttt-' + roomCode, {
-                        reliable: true
-                    });
+                    connection = peer.connect('ttt-' + roomCode, { reliable: true });
 
                     if (!connection) {
-                        showError('Failed to create connection');
+                        handleConnectionFailure(roomCode, 'Failed to create connection');
                         return;
                     }
 
-                    console.log('Connection object created:', connection);
-
-                    connection.on('error', function(err) {
-                        console.error('Connection error:', err);
-                        showError('Failed to connect: ' + err);
-                    });
-
                     setupConnection();
 
-                    // Timeout after 10 seconds
-                    setTimeout(function() {
-                        if (!connection.open) {
-                            console.error('Connection timeout - connection never opened');
-                            showError('Connection timeout. Please try again.');
+                    const timeout = setTimeout(function() {
+                        if (!connection || !connection.open) {
+                            handleConnectionFailure(roomCode, 'Connection timeout');
                         }
-                    }, 10000);
+                    }, CONNECTION_TIMEOUT);
+
+                    connection.on('open', function() {
+                        clearTimeout(timeout);
+                    });
                 }, 500);
             });
 
             peer.on('error', function(err) {
                 console.error('Peer error:', err);
-                showError('Failed to join room. Check the room code and try again.');
+                handleConnectionFailure(roomCode, err.type);
             });
         }
 
-        function setupConnection() {
-            if (!connection) {
-                console.error('No connection object!');
-                showError('Connection failed');
-                return;
-            }
+        function handleConnectionFailure(roomCode, reason) {
+            console.error('Connection failed:', reason);
 
-            console.log('Setting up connection listeners...');
+            if (connectionAttempts < MAX_CONNECTION_ATTEMPTS) {
+                const delay = Math.pow(2, connectionAttempts) * 1000;
+                showStatus(`Retrying in ${delay/1000}s...`, 'waiting');
+                setTimeout(function() {
+                    attemptConnection(roomCode);
+                }, delay);
+            } else {
+                showStatus('Failed to connect. Check the room code and try again.', 'error');
+                document.getElementById('join-button').disabled = false;
+            }
+        }
+
+        function setupConnection() {
+            if (!connection) return;
 
             connection.on('open', function() {
                 console.log('Connection established!');
-                // Hide connecting message and start game
                 document.getElementById('connection-status').classList.add('hidden');
+                document.getElementById('join-button').disabled = false;
                 startGame();
+                startHeartbeat();
             });
 
             connection.on('data', function(data) {
-                console.log('Received data:', data);
-                if (data.type === 'move') {
-                    // Update game state from peer
+                handlePeerData(data);
+            });
+
+            connection.on('close', function() {
+                console.log('Connection closed');
+                stopHeartbeat();
+                showConnectionStatus(false);
+            });
+
+            connection.on('error', function(err) {
+                console.error('Connection error:', err);
+                stopHeartbeat();
+                showConnectionStatus(false);
+            });
+        }
+
+        function handlePeerData(data) {
+            console.log('Received:', data.type);
+
+            switch (data.type) {
+                case 'move':
                     board = data.gameState.board;
                     currentPlayer = data.gameState.currentPlayer;
                     gameHistory = data.gameState.gameHistory;
                     turnCount = data.gameState.turnCount;
                     winner = data.gameState.winner;
                     gameOver = data.gameState.gameOver;
-
-                    if (gameOver && winner) {
-                        showWinner();
-                    }
-
+                    if (gameOver && winner) showWinner();
                     updateDisplay();
+                    break;
+
+                case 'reset':
+                    board = Array(9).fill(null);
+                    currentPlayer = 'X';
+                    gameHistory = { X: [], O: [] };
+                    winner = null;
+                    turnCount = { X: 0, O: 0 };
+                    gameOver = false;
+                    rematchRequested = false;
+                    opponentRematchRequested = false;
+                    updateDisplay();
+                    hideWinner();
+                    break;
+
+                case 'ping':
+                    connection.send({ type: 'pong' });
+                    break;
+
+                case 'pong':
+                    lastPongReceived = Date.now();
+                    break;
+
+                case 'rematch-request':
+                    opponentRematchRequested = true;
+                    if (rematchRequested) {
+                        startRematch();
+                    } else {
+                        updateRematchUI();
+                    }
+                    break;
+
+                case 'rematch-start':
+                    startRematch();
+                    break;
+            }
+        }
+
+        function startHeartbeat() {
+            lastPongReceived = Date.now();
+
+            heartbeatInterval = setInterval(function() {
+                if (connection && connection.open) {
+                    connection.send({ type: 'ping' });
+
+                    if (Date.now() - lastPongReceived > HEARTBEAT_TIMEOUT) {
+                        console.log('Heartbeat timeout - connection may be dead');
+                        showConnectionStatus(false);
+                    }
                 }
-            });
+            }, HEARTBEAT_INTERVAL);
 
-            connection.on('close', function() {
-                console.log('Connection closed');
-                showError('Opponent disconnected');
-            });
+            showConnectionStatus(true);
+        }
 
-            connection.on('error', function(err) {
-                console.error('Connection error:', err);
-                showError('Connection error: ' + err);
-            });
+        function stopHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        }
+
+        function showConnectionStatus(connected) {
+            const indicator = document.getElementById('connection-indicator');
+            const text = document.getElementById('connection-text');
+
+            if (isMultiplayer) {
+                indicator.classList.remove('hidden');
+                if (connected) {
+                    indicator.className = 'connection-indicator online';
+                    text.textContent = 'Connected';
+                } else {
+                    indicator.className = 'connection-indicator offline';
+                    text.textContent = 'Disconnected - Opponent left';
+                }
+            } else {
+                indicator.classList.add('hidden');
+            }
         }
 
         function startGame() {
             isMultiplayer = true;
             document.getElementById('multiplayer-setup').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
+            document.getElementById('leave-button').classList.remove('hidden');
+            showConnectionStatus(true);
             updateDisplay();
         }
 
@@ -737,6 +979,8 @@
             myPlayer = null;
             document.getElementById('multiplayer-setup').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
+            document.getElementById('leave-button').classList.add('hidden');
+            document.getElementById('connection-indicator').classList.add('hidden');
             updateDisplay();
         }
 
@@ -744,16 +988,107 @@
             document.getElementById('join-room').classList.add('hidden');
             document.getElementById('initial-choice').classList.remove('hidden');
             document.getElementById('room-code-input').value = '';
+            document.getElementById('connection-status').classList.add('hidden');
         }
 
-        function showError(message) {
+        function cancelRoom() {
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            document.getElementById('room-created').classList.add('hidden');
+            document.getElementById('initial-choice').classList.remove('hidden');
+        }
+
+        function leaveGame() {
+            if (connection) {
+                connection.close();
+            }
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            stopHeartbeat();
+
+            isMultiplayer = false;
+            myPlayer = null;
+            connection = null;
+
+            resetGame();
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('multiplayer-setup').classList.remove('hidden');
+            document.getElementById('initial-choice').classList.remove('hidden');
+            document.getElementById('room-created').classList.add('hidden');
+            document.getElementById('join-room').classList.add('hidden');
+        }
+
+        function copyRoomCode() {
+            const code = document.getElementById('room-code').textContent;
+            navigator.clipboard.writeText(code).then(function() {
+                const btn = document.querySelector('.copy-button');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function showStatus(message, type) {
             const statusEl = document.getElementById('connection-status');
             statusEl.textContent = message;
-            statusEl.className = 'connection-status error';
+            statusEl.className = 'connection-status ' + type;
             statusEl.classList.remove('hidden');
         }
 
-        // Initialize the game
+        function requestRematch() {
+            if (!connection || !connection.open) return;
+
+            rematchRequested = true;
+            connection.send({ type: 'rematch-request' });
+
+            if (opponentRematchRequested) {
+                connection.send({ type: 'rematch-start' });
+                startRematch();
+            } else {
+                updateRematchUI();
+            }
+        }
+
+        function updateRematchUI() {
+            const btn = document.getElementById('rematch-button');
+            const status = document.getElementById('rematch-status');
+
+            if (rematchRequested && !opponentRematchRequested) {
+                btn.disabled = true;
+                btn.textContent = 'Waiting...';
+                status.textContent = 'Waiting for opponent';
+            } else if (opponentRematchRequested && !rematchRequested) {
+                btn.disabled = false;
+                btn.textContent = 'Accept Rematch';
+                status.textContent = 'Opponent wants a rematch!';
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Rematch';
+                status.textContent = '';
+            }
+        }
+
+        function startRematch() {
+            board = Array(9).fill(null);
+            currentPlayer = 'X';
+            gameHistory = { X: [], O: [] };
+            winner = null;
+            turnCount = { X: 0, O: 0 };
+            gameOver = false;
+            rematchRequested = false;
+            opponentRematchRequested = false;
+            updateDisplay();
+            hideWinner();
+        }
+
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             const cells = document.querySelectorAll('.cell');
             cells.forEach((cell, index) => {
